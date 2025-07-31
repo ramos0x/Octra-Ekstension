@@ -38,7 +38,10 @@ function PopupApp() {
             const connectionReq = typeof pendingRequest === 'string' 
               ? JSON.parse(pendingRequest) 
               : pendingRequest;
-            setConnectionRequest(connectionReq);
+            // Only set connection request if wallet is not locked
+            if (!shouldShowUnlock) {
+              setConnectionRequest(connectionReq);
+            }
           } catch (error) {
             console.error('Failed to parse connection request:', error);
             await ExtensionStorageManager.remove('pendingConnectionRequest');
@@ -52,7 +55,10 @@ function PopupApp() {
             const contractReq = typeof pendingContractRequest === 'string' 
               ? JSON.parse(pendingContractRequest) 
               : pendingContractRequest;
-            setContractRequest(contractReq);
+            // Only set contract request if wallet is not locked
+            if (!shouldShowUnlock) {
+              setContractRequest(contractReq);
+            }
           } catch (error) {
             console.error('Failed to parse contract request:', error);
             await ExtensionStorageManager.remove('pendingContractRequest');

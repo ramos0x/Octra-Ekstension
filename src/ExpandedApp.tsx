@@ -20,7 +20,7 @@ function ExpandedApp() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
-    setIsDAppRequest(action === 'connect' || action === 'transaction' || action === 'contract');
+    setIsDAppRequest(action === 'connect' || action === 'transaction' || action === 'contract' || action === 'unlock');
   }, []);
 
   // ONLY load data once on mount - NO dependencies to prevent loops

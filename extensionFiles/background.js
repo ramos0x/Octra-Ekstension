@@ -73,6 +73,57 @@ async function handleDAppRequest(message, sender) {
 async function handleConnectionRequest(data, sender) {
   const { origin, appName, appIcon, permissions } = data;
   
+  // Check if wallet is locked first
+  const isLocked = await getStorageData('isWalletLocked');
+  const hasPassword = await getStorageData('walletPasswordHash');
+  
+  if (hasPassword && isLocked !== 'false') {
+    // Wallet is locked, store the pending request and ask user to unlock
+    await setStorageData('pendingConnectionRequest', {
+      origin,
+      appName: appName || origin,
+      appIcon: appIcon || null,
+      permissions,
+      timestamp: Date.now()
+    });
+    
+    // Open unlock screen with connection context
+    const unlockUrl = chrome.runtime.getURL(`index.html?action=unlock&pendingConnection=true&origin=${encodeURIComponent(origin)}&appName=${encodeURIComponent(appName || '')}`);
+    
+    await chrome.tabs.create({
+      url: unlockUrl,
+      active: true
+    });
+    
+    // Wait for unlock and connection approval
+    return new Promise((resolve) => {
+      const messageListener = (msg) => {
+        if (msg.type === 'CONNECTION_RESULT' && msg.origin === origin) {
+          chrome.runtime.onMessage.removeListener(messageListener);
+          resolve({
+            type: 'CONNECTION_RESPONSE',
+            success: msg.approved,
+            result: msg.approved ? { address: msg.address, permissions } : null,
+            error: msg.approved ? null : 'User rejected request'
+          });
+        }
+      };
+      
+      chrome.runtime.onMessage.addListener(messageListener);
+      
+      // Cleanup timeout after 5 minutes
+      setTimeout(() => {
+        chrome.runtime.onMessage.removeListener(messageListener);
+        chrome.storage.local.remove('pendingConnectionRequest');
+        resolve({
+          type: 'CONNECTION_RESPONSE',
+          success: false,
+          error: 'Connection request timeout'
+        });
+      }, 300000);
+    });
+  }
+  
   // Check if already connected
   const connectionsData = await getStorageData('connectedDApps');
   const connections = Array.isArray(connectionsData) ? connectionsData : [];
@@ -164,6 +215,59 @@ async function handleConnectionRequest(data, sender) {
 async function handleTransactionRequest(data, sender) {
   const { origin, appName, appIcon, to, amount, message } = data;
   
+   // Check if wallet is locked first
+   const isLocked = await getStorageData('isWalletLocked');
+   const hasPassword = await getStorageData('walletPasswordHash');
+   
+   if (hasPassword && isLocked !== 'false') {
+     // Wallet is locked, store the pending request and ask user to unlock
+     await setStorageData('pendingTransactionRequest', {
+       origin,
+       appName: appName || origin,
+       appIcon: appIcon || null,
+       to,
+       amount,
+       message,
+       timestamp: Date.now()
+     });
+     
+     // Open unlock screen with transaction context
+     const unlockUrl = chrome.runtime.getURL(`index.html?action=unlock&pendingTransaction=true&origin=${encodeURIComponent(origin)}&appName=${encodeURIComponent(appName || '')}`);
+     
+     await chrome.tabs.create({
+       url: unlockUrl,
+       active: true
+     });
+     
+     // Wait for unlock and transaction approval
+     return new Promise((resolve) => {
+       const messageListener = (msg) => {
+         if (msg.type === 'TRANSACTION_RESULT' && msg.origin === origin) {
+           chrome.runtime.onMessage.removeListener(messageListener);
+           resolve({
+             type: 'TRANSACTION_RESPONSE',
+             success: msg.approved,
+             result: msg.approved ? { hash: msg.txHash } : null,
+             error: msg.approved ? null : (msg.error || 'User rejected request')
+           });
+         }
+       };
+       
+       chrome.runtime.onMessage.addListener(messageListener);
+       
+       // Cleanup timeout after 5 minutes
+       setTimeout(() => {
+         chrome.runtime.onMessage.removeListener(messageListener);
+         chrome.storage.local.remove('pendingTransactionRequest');
+         resolve({
+           type: 'TRANSACTION_RESPONSE',
+           success: false,
+           error: 'Transaction request timeout'
+         });
+       }, 300000);
+     });
+   }
+   
   // Check if dApp is connected
   const connectionsData = await getStorageData('connectedDApps');
   const connections = Array.isArray(connectionsData) ? connectionsData : [];
@@ -231,6 +335,64 @@ async function handleContractRequest(data, sender) {
     description 
   } = data;
   
+   // Check if wallet is locked first
+   const isLocked = await getStorageData('isWalletLocked');
+   const hasPassword = await getStorageData('walletPasswordHash');
+   
+   if (hasPassword && isLocked !== 'false') {
+     // Wallet is locked, store the pending request and ask user to unlock
+     await setStorageData('pendingContractRequest', {
+       origin,
+       appName: appName || origin,
+       appIcon: appIcon || null,
+       contractAddress,
+       methodName,
+       methodType,
+       params,
+       gasLimit,
+       gasPrice,
+       value,
+       description,
+       timestamp: Date.now()
+     });
+     
+     // Open unlock screen with contract context
+     const unlockUrl = chrome.runtime.getURL(`index.html?action=unlock&pendingContract=true&origin=${encodeURIComponent(origin)}&appName=${encodeURIComponent(appName || '')}`);
+     
+     await chrome.tabs.create({
+       url: unlockUrl,
+       active: true
+     });
+     
+     // Wait for unlock and contract approval
+     return new Promise((resolve) => {
+       const messageListener = (msg) => {
+         if (msg.type === 'CONTRACT_RESULT' && msg.origin === origin) {
+           chrome.runtime.onMessage.removeListener(messageListener);
+           resolve({
+             type: 'CONTRACT_RESPONSE',
+             success: msg.approved,
+             result: msg.approved ? msg.result : null,
+             error: msg.approved ? null : (msg.error || 'User rejected contract call')
+           });
+         }
+       };
+       
+       chrome.runtime.onMessage.addListener(messageListener);
+       
+       // Cleanup timeout after 5 minutes
+       setTimeout(() => {
+         chrome.runtime.onMessage.removeListener(messageListener);
+         chrome.storage.local.remove('pendingContractRequest');
+         resolve({
+           type: 'CONTRACT_RESPONSE',
+           success: false,
+           error: 'Contract call request timeout'
+         });
+       }, 300000);
+     });
+   }
+   
   // Check if dApp is connected
   const connectionsData = await getStorageData('connectedDApps');
   const connections = Array.isArray(connectionsData) ? connectionsData : [];

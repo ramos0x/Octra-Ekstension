@@ -85,6 +85,86 @@ export function DAppRequestHandler({
       return;
     }
     
+    // Check for pending requests from storage (after unlock)
+    const checkPendingRequests = async () => {
+      try {
+        // Check for pending connection request
+        const pendingConnection = localStorage.getItem('pendingConnectionRequest');
+        if (pendingConnection) {
+          const connectionReq = JSON.parse(pendingConnection);
+          setConnectionRequest(connectionReq);
+          return;
+        }
+        
+        // Check for pending contract request
+        const pendingContract = localStorage.getItem('pendingContractRequest');
+        if (pendingContract) {
+          const contractReq = JSON.parse(pendingContract);
+          
+          const unifiedRequest = {
+            origin: contractReq.origin,
+            appName: contractReq.appName,
+            appIcon: contractReq.appIcon,
+            contractAddress: contractReq.contractAddress,
+            methodName: contractReq.methodName,
+            methodType: contractReq.methodType,
+            params: contractReq.params || [],
+            gasLimit: contractReq.gasLimit,
+            gasPrice: contractReq.gasPrice,
+            value: contractReq.value,
+            description: contractReq.description
+          };
+          
+          setContractRequest(unifiedRequest);
+          
+          // Set connected wallet if provided
+          if (contractReq.connectedAddress) {
+            const wallet = wallets.find(w => w.address === contractReq.connectedAddress);
+            if (wallet) {
+              setConnectedWallet(wallet);
+              setSelectedWallet(wallet);
+            }
+          }
+          return;
+        }
+        
+        // Check for pending transaction request
+        const pendingTransaction = localStorage.getItem('pendingTransactionRequest');
+        if (pendingTransaction) {
+          const txReq = JSON.parse(pendingTransaction);
+          
+          // Convert transaction to contract format
+          const unifiedRequest = {
+            origin: txReq.origin,
+            appName: txReq.appName,
+            appIcon: txReq.appIcon,
+            contractAddress: txReq.to,
+            methodName: 'transfer',
+            methodType: 'call' as const,
+            params: [
+              {
+                name: 'amount',
+                type: 'string',
+                value: txReq.amount,
+                required: true,
+                description: 'Amount to transfer in OCT'
+              }
+            ],
+            value: txReq.amount,
+            description: txReq.message || 'Direct transfer transaction'
+          };
+          
+          setContractRequest(unifiedRequest);
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to check pending requests:', error);
+      }
+    };
+    
+    // Check for pending requests if no prop request
+    checkPendingRequests();
+    
     // Parse URL parameters for dApp requests
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
@@ -215,6 +295,9 @@ export function DAppRequestHandler({
       filteredConnections.push(newConnection);
       localStorage.setItem('connectedDApps', JSON.stringify(filteredConnections));
       
+      // Clear pending request
+      localStorage.removeItem('pendingConnectionRequest');
+      
       // Send response to background script
       chrome.runtime.sendMessage({
         type: 'CONNECTION_RESULT',
@@ -233,6 +316,9 @@ export function DAppRequestHandler({
   const handleConnectionReject = () => {
     if (!connectionRequest) return;
     
+    // Clear pending request
+    localStorage.removeItem('pendingConnectionRequest');
+    
     // Send rejection response
     chrome.runtime.sendMessage({
       type: 'CONNECTION_RESULT',
@@ -246,6 +332,10 @@ export function DAppRequestHandler({
 
   const handleContractApprove = (result: any) => {
     if (!contractRequest) return;
+    
+    // Clear pending requests
+    localStorage.removeItem('pendingContractRequest');
+    localStorage.removeItem('pendingTransactionRequest');
     
     if (propOnApprove) {
       // Use prop callback (popup mode)
@@ -266,6 +356,10 @@ export function DAppRequestHandler({
 
   const handleContractReject = (error?: string) => {
     if (!contractRequest) return;
+    
+    // Clear pending requests
+    localStorage.removeItem('pendingContractRequest');
+    localStorage.removeItem('pendingTransactionRequest');
     
     if (propOnReject) {
       // Use prop callback (popup mode)

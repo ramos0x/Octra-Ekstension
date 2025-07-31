@@ -20,7 +20,7 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     
-    if (action === 'connect') {
+    if (action === 'connect' && !isLocked) {
       const origin = urlParams.get('origin');
       const appName = urlParams.get('appName');
       const appIcon = urlParams.get('appIcon');
@@ -35,7 +35,7 @@ function App() {
         });
       }
     }
-  }, []);
+  }, [isLocked]);
 
   // Listen for storage changes across tabs
   useEffect(() => {
