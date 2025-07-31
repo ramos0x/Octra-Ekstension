@@ -89,7 +89,11 @@ export function ConnectedDAppsManager({ wallets, onClose }: ConnectedDAppsManage
     // Update the connection for this specific origin
     const updatedDApps = connectedDApps.map(dapp => 
       dapp.origin === selectedDApp.origin 
-        ? { ...dapp, selectedAddress: selectedWallet.address }
+        ? { 
+            ...dapp, 
+            selectedAddress: selectedWallet.address,
+            connectedWalletAddress: selectedWallet.address // Update the connected wallet
+          }
         : dapp
     );
     
@@ -239,7 +243,7 @@ export function ConnectedDAppsManager({ wallets, onClose }: ConnectedDAppsManage
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
-                            <span>{getWalletDisplayName(dapp.selectedAddress)}</span>
+                            <span>{getWalletDisplayName(dapp.connectedWalletAddress || dapp.selectedAddress)}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <span>Connected: {formatDate(dapp.connectedAt)}</span>

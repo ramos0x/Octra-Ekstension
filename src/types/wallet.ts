@@ -181,4 +181,5 @@ export interface ConnectedDApp {
   connectedAt: number;
   permissions: string[];
   selectedAddress: string;
+  connectedWalletAddress?: string; // The specific wallet address selected during connection
 }

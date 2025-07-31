@@ -78,11 +78,8 @@ export function DAppRequestHandler({
         const wallet = wallets.find(w => w.address === propContractRequest.connectedAddress);
         if (wallet) {
           setConnectedWallet(wallet);
-          if (propSelectedWallet) {
-            setSelectedWallet(propSelectedWallet);
-          } else {
-            setSelectedWallet(wallet);
-          }
+          // Always use the connected wallet as the selected wallet for contract interactions
+          setSelectedWallet(wallet);
         }
       }
       return;
@@ -188,6 +185,8 @@ export function DAppRequestHandler({
           const wallet = wallets.find(w => w.address === decodeURIComponent(connectedAddress));
           if (wallet) {
             setConnectedWallet(wallet);
+            // Always use the connected wallet for contract interactions
+            // Always use the connected wallet for transaction requests
             setSelectedWallet(wallet);
           }
         }

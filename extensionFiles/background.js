@@ -84,7 +84,7 @@ async function handleConnectionRequest(data, sender) {
       type: 'CONNECTION_RESPONSE',
       success: true,
       result: {
-        address: existingConnection.selectedAddress,
+        address: existingConnection.connectedWalletAddress || existingConnection.selectedAddress,
         permissions: existingConnection.permissions
       }
     };
@@ -124,6 +124,7 @@ async function handleConnectionRequest(data, sender) {
           const newConnection = {
             origin,
             selectedAddress: msg.address,
+            connectedWalletAddress: msg.address, // Store the specifically selected wallet
             permissions,
             connectedAt: Date.now()
           };
@@ -172,8 +173,11 @@ async function handleTransactionRequest(data, sender) {
     throw new Error('dApp not connected');
   }
   
+  // Use the specifically connected wallet address, not the currently active one
+  const connectedWalletAddress = connection.connectedWalletAddress || connection.selectedAddress;
+  
   // Open transaction approval popup
-  const approvalUrl = chrome.runtime.getURL(`index.html?action=transaction&origin=${encodeURIComponent(origin)}&appName=${encodeURIComponent(appName || '')}&appIcon=${encodeURIComponent(appIcon || '')}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}&message=${encodeURIComponent(message || '')}&connectedAddress=${encodeURIComponent(connection.selectedAddress)}`);
+  const approvalUrl = chrome.runtime.getURL(`index.html?action=transaction&origin=${encodeURIComponent(origin)}&appName=${encodeURIComponent(appName || '')}&appIcon=${encodeURIComponent(appIcon || '')}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}&message=${encodeURIComponent(message || '')}&connectedAddress=${encodeURIComponent(connectedWalletAddress)}`);
   
   const tab = await chrome.tabs.create({
     url: approvalUrl,
@@ -236,6 +240,9 @@ async function handleContractRequest(data, sender) {
     throw new Error('dApp not connected');
   }
   
+  // Use the specifically connected wallet address, not the currently active one
+  const connectedWalletAddress = connection.connectedWalletAddress || connection.selectedAddress;
+  
   // Store contract request data for popup to access
   await setStorageData('pendingContractRequest', {
     origin,
@@ -249,7 +256,7 @@ async function handleContractRequest(data, sender) {
     gasPrice,
     value,
     description,
-    connectedAddress: connection.selectedAddress,
+    connectedAddress: connectedWalletAddress,
     timestamp: Date.now()
   });
   
@@ -267,7 +274,7 @@ async function handleContractRequest(data, sender) {
       contractAddress: encodeURIComponent(contractAddress),
       methodName: encodeURIComponent(methodName),
       methodType: encodeURIComponent(methodType),
-      connectedAddress: encodeURIComponent(connection.selectedAddress)
+      connectedAddress: encodeURIComponent(connectedWalletAddress)
     });
     
     // Add optional parameters

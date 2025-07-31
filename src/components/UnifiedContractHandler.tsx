@@ -693,7 +693,7 @@ export function UnifiedContractHandler({
             )}
 
             {/* Wallet Selection */}
-            {!connectedWallet && (
+            {!connectedWallet ? (
               <div className="space-y-3">
                 <h3 className="font-medium flex items-center gap-2">
                   <Shield className="h-4 w-4" />
@@ -726,6 +726,33 @@ export function UnifiedContractHandler({
                     ))}
                   </div>
                 </ScrollArea>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <h3 className="font-medium flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Connected Wallet
+                </h3>
+                <div className="p-4 bg-muted rounded-md">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
+                      <span className="text-primary-foreground font-medium">
+                        {wallets.findIndex(w => w.address === connectedWallet.address) + 1}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        Account {wallets.findIndex(w => w.address === connectedWallet.address) + 1}
+                      </p>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        {truncateAddress(connectedWallet.address)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    This dApp is connected to this specific wallet
+                  </p>
+                </div>
               </div>
             )}
 

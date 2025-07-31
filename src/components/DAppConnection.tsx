@@ -61,7 +61,9 @@ export function DAppConnection({
         appName: connectionRequest.appName || connectionRequest.origin,
         connectedAt: Date.now(),
         permissions: connectionRequest.permissions,
-        selectedAddress: selectedWallet.address
+        selectedAddress: selectedWallet.address,
+        // Store the selected wallet explicitly for this dApp
+        connectedWalletAddress: selectedWallet.address
       };
       
       // Add the new connection
@@ -72,7 +74,7 @@ export function DAppConnection({
       
       toast({
         title: existingConnection ? "Connection Updated" : "Connection Approved",
-        description: `${connectionRequest.appName || 'dApp'} is now connected to ${selectedWallet.address.slice(0, 8)}...${selectedWallet.address.slice(-6)}`,
+        description: `${connectionRequest.appName || 'dApp'} is now connected to wallet ${selectedWallet.address.slice(0, 8)}...${selectedWallet.address.slice(-6)}`,
       });
       
       onApprove(selectedWallet);
